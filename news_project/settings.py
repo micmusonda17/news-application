@@ -21,7 +21,14 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver']
+# Which hostnames the site is allowed to be served under. This is read
+# from an environment variable (a comma separated list) so that the same
+# image can run on my machine, on someone else's machine, or on Docker
+# Playground, where the hostname is different every time.
+ALLOWED_HOSTS = os.environ.get(
+    'DJANGO_ALLOWED_HOSTS',
+    '127.0.0.1,localhost,testserver'
+).split(',')
 
 
 # All the apps my project uses
@@ -41,6 +48,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise serves the collected static files when the app runs under
+    # a real web server such as Gunicorn (for example inside Docker).
+    # Without it the CSS would come back as 404 outside of runserver.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -134,6 +145,19 @@ USE_TZ = True
 # Static files (CSS)
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Let WhiteNoise serve and compress the static files. I use the plain
+# compressed storage rather than the manifest one, because the manifest
+# version needs collectstatic to have been run first and that would make
+# the unit tests fail.
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

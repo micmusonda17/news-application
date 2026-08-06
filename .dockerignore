@@ -1,0 +1,14 @@
+# Keep these out of the image to make the build faster and smaller
+venv/
+env/
+__pycache__/
+*.pyc
+db.sqlite3
+.git/
+.gitignore
+docs/_build/
+staticfiles/
+.DS_Store
+.vscode/
+.idea/
+*.md
