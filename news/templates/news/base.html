@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}News Application{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'news/style.css' %}">
+</head>
+<body>
+
+<!-- the menu at the top of every page -->
+<header class="navbar">
+    <a class="logo" href="{% url 'article_list' %}">Daily News</a>
+
+    <nav>
+        <a href="{% url 'article_list' %}">Home</a>
+        <a href="{% url 'newsletter_list' %}">Newsletters</a>
+        <a href="{% url 'publisher_list' %}">Publishers</a>
+
+        {% if user.is_authenticated %}
+            {% if user.role == 'reader' %}
+                <a href="{% url 'my_feed' %}">My feed</a>
+                <a href="{% url 'subscriptions' %}">Subscriptions</a>
+            {% endif %}
+
+            {% if user.role == 'journalist' %}
+                <a href="{% url 'my_articles' %}">My articles</a>
+                <a href="{% url 'article_create' %}">Write article</a>
+            {% endif %}
+
+            {% if user.role == 'editor' %}
+                <a href="{% url 'editor_dashboard' %}">Approve articles</a>
+            {% endif %}
+
+            <span class="username">{{ user.username }} ({{ user.role }})</span>
+            <form action="{% url 'logout' %}" method="post" class="logout-form">
+                {% csrf_token %}
+                <button type="submit" class="link-button">Log out</button>
+            </form>
+        {% else %}
+            <a href="{% url 'login' %}">Log in</a>
+            <a href="{% url 'register' %}">Register</a>
+        {% endif %}
+    </nav>
+</header>
+
+<main class="container">
+
+    <!-- messages like "your article was saved" show up here -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+    <p>News Application &ndash; Capstone Project</p>
+</footer>
+
+</body>
+</html>

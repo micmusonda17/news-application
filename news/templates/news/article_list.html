@@ -1,0 +1,33 @@
+{% extends 'news/base.html' %}
+
+{% block title %}Latest news{% endblock %}
+
+{% block content %}
+<h1>Latest news</h1>
+
+<!-- a little search box so you can look for an article by its title -->
+<form method="get" class="search-form">
+    <input type="text" name="search" value="{{ search }}"
+           placeholder="Search for an article..." class="form-input">
+    <button type="submit" class="button">Search</button>
+</form>
+
+{% for article in articles %}
+    <div class="card">
+        <h2><a href="{% url 'article_detail' article.id %}">{{ article.title }}</a></h2>
+        <p class="meta">
+            By {{ article.author.username }} |
+            {% if article.publisher %}
+                {{ article.publisher.name }}
+            {% else %}
+                Independent
+            {% endif %}
+            | {{ article.created_at|date:"d M Y" }}
+        </p>
+        <p>{{ article.content|truncatewords:40 }}</p>
+    </div>
+{% empty %}
+    <p>There are no articles here yet.</p>
+{% endfor %}
+
+{% endblock %}

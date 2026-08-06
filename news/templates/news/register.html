@@ -1,0 +1,18 @@
+{% extends 'news/base.html' %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="card small">
+    <h1>Make an account</h1>
+    <p>Choose a role: reader, journalist or editor.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="button">Register</button>
+    </form>
+
+    <p>Already have an account? <a href="{% url 'login' %}">Log in here</a></p>
+</div>
+{% endblock %}

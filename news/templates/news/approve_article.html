@@ -1,0 +1,23 @@
+{% extends 'news/base.html' %}
+
+{% block title %}Approve article{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Approve this article?</h1>
+    <h2>{{ article.title }}</h2>
+    <p class="meta">By {{ article.author.username }}</p>
+    <div class="article-body">{{ article.content|linebreaks }}</div>
+
+    <p class="warning">
+        When you approve this article an email is sent to all the
+        subscribers and the article is posted to the API.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="button">Yes, approve it</button>
+        <a class="button grey" href="{% url 'editor_dashboard' %}">Cancel</a>
+    </form>
+</div>
+{% endblock %}

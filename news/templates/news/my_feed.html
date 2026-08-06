@@ -1,0 +1,27 @@
+{% extends 'news/base.html' %}
+
+{% block title %}My feed{% endblock %}
+
+{% block content %}
+<h1>My feed</h1>
+<p>These are the articles from the publishers and journalists you follow.</p>
+
+{% for article in articles %}
+    <div class="card">
+        <h2><a href="{% url 'article_detail' article.id %}">{{ article.title }}</a></h2>
+        <p class="meta">
+            By {{ article.author.username }} |
+            {% if article.publisher %}{{ article.publisher.name }}
+            {% else %}Independent{% endif %}
+            | {{ article.created_at|date:"d M Y" }}
+        </p>
+        <p>{{ article.content|truncatewords:40 }}</p>
+    </div>
+{% empty %}
+    <p>
+        Your feed is empty. Go to
+        <a href="{% url 'subscriptions' %}">subscriptions</a> and follow
+        somebody first.
+    </p>
+{% endfor %}
+{% endblock %}

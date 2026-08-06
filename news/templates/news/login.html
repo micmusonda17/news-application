@@ -1,0 +1,21 @@
+{% extends 'news/base.html' %}
+
+{% block title %}Log in{% endblock %}
+
+{% block content %}
+<div class="card small">
+    <h1>Log in</h1>
+
+    {% if form.errors %}
+        <p class="warning">Your username or password is not correct.</p>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="button">Log in</button>
+    </form>
+
+    <p>Do not have an account? <a href="{% url 'register' %}">Register here</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends 'news/base.html' %}
+
+{% block title %}My subscriptions{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>My subscriptions</h1>
+    <p>
+        Tick the publishers and the journalists that you want to follow.
+        You will get an email every time one of them publishes a new
+        article.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="button">Save my subscriptions</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'news/base.html' %}
+
+{% block title %}Publishers{% endblock %}
+
+{% block content %}
+<h1>Publishers</h1>
+
+{% for publisher in publishers %}
+    <div class="card">
+        <h2>{{ publisher.name }}</h2>
+        <p>{{ publisher.description }}</p>
+        <p class="meta">
+            {{ publisher.journalists.count }} journalist(s) |
+            {{ publisher.editors.count }} editor(s) |
+            {{ publisher.articles.count }} article(s)
+        </p>
+    </div>
+{% empty %}
+    <p>No publishers have been added yet.</p>
+{% endfor %}
+{% endblock %}

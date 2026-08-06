@@ -1,0 +1,37 @@
+{% extends 'news/base.html' %}
+
+{% block title %}My articles{% endblock %}
+
+{% block content %}
+<h1>My articles</h1>
+<p><a class="button" href="{% url 'article_create' %}">Write a new article</a></p>
+
+<table class="table">
+    <tr>
+        <th>Title</th>
+        <th>Publisher</th>
+        <th>Approved</th>
+        <th>Date</th>
+        <th>Actions</th>
+    </tr>
+    {% for article in articles %}
+        <tr>
+            <td><a href="{% url 'article_detail' article.id %}">{{ article.title }}</a></td>
+            <td>
+                {% if article.publisher %}{{ article.publisher.name }}
+                {% else %}Independent{% endif %}
+            </td>
+            <td>
+                {% if article.approved %}Yes{% else %}Waiting{% endif %}
+            </td>
+            <td>{{ article.created_at|date:"d M Y" }}</td>
+            <td>
+                <a href="{% url 'article_edit' article.id %}">Edit</a> |
+                <a href="{% url 'article_delete' article.id %}">Delete</a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="5">You have not written any articles yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

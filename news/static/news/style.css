@@ -1,0 +1,190 @@
+/* This is the style sheet for my news application.
+   I kept it simple, just enough so the pages look neat. */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f2f4f7;
+    color: #222222;
+}
+
+/* ---------- the menu at the top ---------- */
+.navbar {
+    background-color: #1f3b57;
+    color: #ffffff;
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.navbar .logo {
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.navbar nav a {
+    color: #ffffff;
+    text-decoration: none;
+    margin-left: 16px;
+}
+
+.navbar nav a:hover {
+    text-decoration: underline;
+}
+
+.username {
+    margin-left: 16px;
+    font-size: 14px;
+    color: #cfd9e3;
+}
+
+.logout-form {
+    display: inline;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 15px;
+    margin-left: 12px;
+    text-decoration: underline;
+}
+
+/* ---------- the main part of the page ---------- */
+.container {
+    max-width: 900px;
+    margin: 24px auto;
+    padding: 0 16px;
+}
+
+h1 {
+    color: #1f3b57;
+}
+
+.card {
+    background-color: #ffffff;
+    border: 1px solid #dde3ea;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 18px;
+}
+
+.card.small {
+    max-width: 450px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.card h2 {
+    margin-top: 0;
+}
+
+.card h2 a {
+    color: #1f3b57;
+    text-decoration: none;
+}
+
+.meta {
+    color: #6b7c8f;
+    font-size: 14px;
+}
+
+.article-body {
+    line-height: 1.6;
+}
+
+/* ---------- buttons and forms ---------- */
+.button {
+    display: inline-block;
+    background-color: #1f6feb;
+    color: #ffffff;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.button:hover {
+    background-color: #1857b8;
+}
+
+.button.danger {
+    background-color: #c0392b;
+}
+
+.button.grey {
+    background-color: #7f8c8d;
+}
+
+.form-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #c3ccd6;
+    border-radius: 4px;
+    margin-top: 4px;
+}
+
+.search-form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+/* ---------- tables ---------- */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+}
+
+.table th,
+.table td {
+    border: 1px solid #dde3ea;
+    padding: 10px;
+    text-align: left;
+}
+
+.table th {
+    background-color: #e8edf3;
+}
+
+/* ---------- messages ---------- */
+.message {
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    background-color: #e7f4e4;
+    border: 1px solid #9ecf95;
+}
+
+.message.error {
+    background-color: #fdecea;
+    border-color: #e2a29c;
+}
+
+.warning {
+    color: #a05a00;
+    background-color: #fff4e0;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+/* ---------- footer ---------- */
+.footer {
+    text-align: center;
+    color: #6b7c8f;
+    font-size: 14px;
+    padding: 20px;
+}

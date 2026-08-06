@@ -1,0 +1,39 @@
+{% extends 'news/base.html' %}
+
+{% block title %}Editor dashboard{% endblock %}
+
+{% block content %}
+<h1>Articles waiting for approval</h1>
+
+<table class="table">
+    <tr>
+        <th>Title</th>
+        <th>Author</th>
+        <th>Publisher</th>
+        <th>Date</th>
+        <th>Actions</th>
+    </tr>
+    {% for article in articles %}
+        <tr>
+            <td><a href="{% url 'article_detail' article.id %}">{{ article.title }}</a></td>
+            <td>{{ article.author.username }}</td>
+            <td>
+                {% if article.publisher %}{{ article.publisher.name }}
+                {% else %}Independent{% endif %}
+            </td>
+            <td>{{ article.created_at|date:"d M Y" }}</td>
+            <td>
+                <!-- I use a small form so that approving is a POST -->
+                <form method="post" action="{% url 'approve_article' article.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="button">Approve</button>
+                </form>
+                <a href="{% url 'article_edit' article.id %}">Edit</a> |
+                <a href="{% url 'article_delete' article.id %}">Delete</a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="5">Nothing to approve. Good job!</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

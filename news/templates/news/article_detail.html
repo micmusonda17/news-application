@@ -1,0 +1,37 @@
+{% extends 'news/base.html' %}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>{{ article.title }}</h1>
+    <p class="meta">
+        By {{ article.author.username }} |
+        {% if article.publisher %}
+            {{ article.publisher.name }}
+        {% else %}
+            Independent journalist
+        {% endif %}
+        | {{ article.created_at|date:"d M Y H:i" }}
+    </p>
+
+    {% if not article.approved %}
+        <p class="warning">This article is still waiting for an editor.</p>
+    {% endif %}
+
+    <div class="article-body">
+        {{ article.content|linebreaks }}
+    </div>
+
+    <!-- only the journalist that wrote it or an editor can change it -->
+    {% if user.role == 'editor' or user == article.author %}
+        <p>
+            <a class="button" href="{% url 'article_edit' article.id %}">Edit</a>
+            <a class="button danger" href="{% url 'article_delete' article.id %}">Delete</a>
+            {% if user.role == 'editor' and not article.approved %}
+                <a class="button" href="{% url 'approve_article' article.id %}">Approve</a>
+            {% endif %}
+        </p>
+    {% endif %}
+</div>
+{% endblock %}
