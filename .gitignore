@@ -14,3 +14,7 @@ staticfiles/
 # docs/_build/html is committed on purpose, but these doctree files are
 # just an internal cache that changes on every build.
 docs/_build/doctrees/
+
+# The course task brief PDFs are not mine to publish, so keep them out
+# of the public repository.
+*.pdf
