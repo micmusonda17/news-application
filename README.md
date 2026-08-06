@@ -198,3 +198,124 @@ There are 48 tests and they check:
 | Reader | view |
 | Editor | view, change, delete |
 | Journalist | add, view, change, delete |
+
+## Running it with Docker
+
+The project has a `Dockerfile` so it can be run without installing
+Python or MariaDB first. This is the easiest way to try the app on
+another computer or on Docker Playground.
+
+### Build the image
+
+From the folder with the `Dockerfile` in it:
+
+```bash
+docker build -t news-application .
+```
+
+### Run the container
+
+```bash
+docker run -p 8000:8000 news-application
+```
+
+Then open http://127.0.0.1:8000/ in a browser.
+
+When the container starts it runs the migrations, collects the static
+files, and then starts **Gunicorn**. By default it uses SQLite, so the
+container works on its own without a database server.
+
+### Making a superuser inside the container
+
+```bash
+docker run -it -p 8000:8000 news-application sh -c \
+  "python manage.py migrate && python manage.py createsuperuser && \
+   gunicorn news_project.wsgi:application --bind 0.0.0.0:8000"
+```
+
+### Using MariaDB instead of SQLite
+
+Pass the database settings in as environment variables. Nothing secret
+is stored in the image, so you supply your own password here:
+
+```bash
+docker run -p 8000:8000 \
+  -e USE_SQLITE=False \
+  -e DB_NAME=news_application \
+  -e DB_USER=news_user \
+  -e DB_PASSWORD=your_password \
+  -e DB_HOST=host.docker.internal \
+  -e DB_PORT=3306 \
+  news-application
+```
+
+Use `host.docker.internal` for a MariaDB running on your own machine.
+
+### Settings you can pass to the container
+
+| Variable | What it does | Default |
+| --- | --- | --- |
+| `DJANGO_SECRET_KEY` | The Django secret key. **Set your own for anything real.** | an insecure development key |
+| `DJANGO_ALLOWED_HOSTS` | Comma separated hostnames the site may be served under | `*` inside the container |
+| `USE_SQLITE` | `True` for SQLite, `False` for MariaDB | `True` |
+| `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` | The MariaDB connection details | see the table above |
+| `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | Login for sending real email | empty (emails print to the console) |
+
+## Keeping secrets out of the repository
+
+No passwords, secret keys or tokens are committed to this repository.
+Everything sensitive is read from environment variables in
+`news_project/settings.py`, and the `.gitignore` file keeps `.env`
+files, the SQLite database and the virtual environment out of Git.
+
+To run the project properly you should set your own values:
+
+```bash
+export DJANGO_SECRET_KEY="a-long-random-string-you-generate-yourself"
+export DB_PASSWORD="your-own-database-password"
+```
+
+You can generate a secret key with:
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+The default secret key in `settings.py` is only there so the project
+runs out of the box while marking. It is clearly marked as insecure and
+must be replaced before the site is used for real.
+
+## The documentation
+
+The code is documented with docstrings and I used **Sphinx** to turn
+those into HTML pages.
+
+The built documentation is committed to the repository, so you can read
+it without building anything. Open this file in a browser:
+
+```
+docs/_build/html/index.html
+```
+
+### Building the documentation again
+
+```bash
+source venv/bin/activate
+pip install sphinx sphinx-rtd-theme
+cd docs
+make clean
+make html
+```
+
+Sphinx has to start Django before it can import the models, so
+`docs/conf.py` sets `DJANGO_SETTINGS_MODULE` and calls `django.setup()`.
+
+## How this repository is organised
+
+The work was done on branches, as the task asked:
+
+* `main` - the project itself
+* `docs` - the docstrings and the Sphinx documentation
+* `container` - the Dockerfile
+
+Both `docs` and `container` have been merged back into `main`.
