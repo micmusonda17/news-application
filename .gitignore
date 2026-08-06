@@ -9,3 +9,8 @@ staticfiles/
 .DS_Store
 .vscode/
 .idea/
+
+# Sphinx build cache. The finished HTML documentation in
+# docs/_build/html is committed on purpose, but these doctree files are
+# just an internal cache that changes on every build.
+docs/_build/doctrees/
