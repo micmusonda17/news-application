@@ -59,6 +59,8 @@ class CustomUser(AbstractUser):
     # do journalist.articles.all() and journalist.newsletters.all().
 
     class Meta:
+        """Nicer singular and plural names for the admin site."""
+
         verbose_name = 'user'
         verbose_name_plural = 'users'
 
@@ -148,6 +150,8 @@ class Publisher(models.Model):
     )
 
     class Meta:
+        """List publishers alphabetically by name."""
+
         ordering = ['name']
 
     def __str__(self):
@@ -193,6 +197,8 @@ class Article(models.Model):
     )
 
     class Meta:
+        """Show the newest articles first."""
+
         ordering = ['-created_at']   # newest article first
 
     def __str__(self):
@@ -229,6 +235,8 @@ class Newsletter(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        """Show the newest newsletters first."""
+
         ordering = ['-created_at']
 
     def __str__(self):
@@ -256,6 +264,8 @@ class ApprovedArticleLog(models.Model):
     shared_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        """Show the most recently shared articles first."""
+
         ordering = ['-shared_at']
 
     def __str__(self):

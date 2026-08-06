@@ -15,6 +15,13 @@ class IsJournalistOrReadOnly(permissions.BasePermission):
     message = 'Only journalists are allowed to create articles.'
 
     def has_permission(self, request, view):
+        """Allow any logged in user to read, but only journalists to POST.
+
+        :param request: The incoming request.
+        :param view: The view being accessed.
+        :returns: True if the user may perform this request.
+        :rtype: bool
+        """
         # GET, HEAD and OPTIONS are 'safe methods' (just reading)
         if request.method in permissions.SAFE_METHODS:
             return request.user.is_authenticated
@@ -32,9 +39,24 @@ class IsEditorOrAuthorOrReadOnly(permissions.BasePermission):
     message = 'You are not allowed to change this article.'
 
     def has_permission(self, request, view):
+        """Let any logged in user through to the object level check.
+
+        :param request: The incoming request.
+        :param view: The view being accessed.
+        :returns: True if the user is logged in.
+        :rtype: bool
+        """
         return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
+        """Decide if this user may change or delete one article.
+
+        :param request: The incoming request.
+        :param view: The view being accessed.
+        :param obj: The article being acted on.
+        :returns: True for reads, for editors, or for the article's author.
+        :rtype: bool
+        """
         if request.method in permissions.SAFE_METHODS:
             return True
         if request.user.is_editor():
@@ -50,6 +72,13 @@ class IsEditor(permissions.BasePermission):
     message = 'Only an editor can approve an article.'
 
     def has_permission(self, request, view):
+        """Allow the request only if the user is an editor.
+
+        :param request: The incoming request.
+        :param view: The view being accessed.
+        :returns: True if the user is a logged in editor.
+        :rtype: bool
+        """
         return request.user.is_authenticated and request.user.is_editor()
 
 
@@ -59,4 +88,11 @@ class IsReader(permissions.BasePermission):
     message = 'Only a reader has subscriptions.'
 
     def has_permission(self, request, view):
+        """Allow the request only if the user is a reader.
+
+        :param request: The incoming request.
+        :param view: The view being accessed.
+        :returns: True if the user is a logged in reader.
+        :rtype: bool
+        """
         return request.user.is_authenticated and request.user.is_reader()

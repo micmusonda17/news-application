@@ -20,6 +20,8 @@ class UserSerializer(serializers.ModelSerializer):
     """Turns a user into JSON. I do not send the password out."""
 
     class Meta:
+        """Serialise CustomUser without exposing the password."""
+
         model = CustomUser
         fields = [
             'id',
@@ -36,6 +38,8 @@ class PublisherSerializer(serializers.ModelSerializer):
     """Turns a publisher into JSON."""
 
     class Meta:
+        """Serialise a publisher and the staff linked to it."""
+
         model = Publisher
         fields = [
             'id', 'name', 'description', 'email', 'editors', 'journalists'
@@ -58,6 +62,8 @@ class ArticleSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
+        """Serialise an article together with its author and publisher names."""
+
         model = Article
         fields = [
             'id',
@@ -85,6 +91,8 @@ class NewsletterSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
+        """Serialise a newsletter and the articles it contains."""
+
         model = Newsletter
         fields = [
             'id',
@@ -103,6 +111,8 @@ class ApprovedArticleLogSerializer(serializers.ModelSerializer):
     """Used by the /api/approved/ endpoint that my signal posts to."""
 
     class Meta:
+        """Serialise the log entry written when an article is approved."""
+
         model = ApprovedArticleLog
         fields = [
             'id',

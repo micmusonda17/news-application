@@ -20,6 +20,8 @@ class RegisterForm(UserCreationForm):
     )
 
     class Meta:
+        """Build the form from CustomUser with the sign up fields."""
+
         model = CustomUser
         fields = ['username', 'email', 'role', 'password1', 'password2']
 
@@ -34,6 +36,8 @@ class ArticleForm(forms.ModelForm):
     """The form a journalist uses to write or edit an article."""
 
     class Meta:
+        """Build the form from Article with the fields a journalist fills in."""
+
         model = Article
         fields = ['title', 'content', 'publisher']
         widgets = {
@@ -52,6 +56,8 @@ class NewsletterForm(forms.ModelForm):
     """The form for making a newsletter out of some articles."""
 
     class Meta:
+        """Build the form from Newsletter, including the articles to include."""
+
         model = Newsletter
         fields = ['title', 'description', 'publisher', 'articles']
         widgets = {
@@ -75,6 +81,8 @@ class SubscriptionForm(forms.ModelForm):
     """The form a reader uses to choose their subscriptions."""
 
     class Meta:
+        """Only expose the two subscription fields to the reader."""
+
         model = CustomUser
         fields = ['subscriptions_publishers', 'subscriptions_journalists']
         widgets = {

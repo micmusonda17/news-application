@@ -1,0 +1,316 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>news.signals &mdash; News Application 00.00.01 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d7bb8d4d"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            News Application
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">news</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">News Application</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">news.signals</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for news.signals</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">All my signals live in this file.</span>
+
+<span class="sd">There are two things happening here:</span>
+
+<span class="sd">1. After the migrations run I create the three groups (Reader, Editor,</span>
+<span class="sd">   Journalist) and I give each group the permissions that the task asked</span>
+<span class="sd">   for.</span>
+
+<span class="sd">2. When an editor approves an article I:</span>
+<span class="sd">       - send an email to everybody who is subscribed to the journalist</span>
+<span class="sd">         or to the publisher, and</span>
+<span class="sd">       - send a POST request to my own API endpoint /api/approved/ so</span>
+<span class="sd">         that the approved article is &#39;shared&#39; outside the website.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.conf</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.contrib.auth.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Group</span><span class="p">,</span> <span class="n">Permission</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.contrib.contenttypes.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContentType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.core.mail</span><span class="w"> </span><span class="kn">import</span> <span class="n">send_mail</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models.signals</span><span class="w"> </span><span class="kn">import</span> <span class="n">post_migrate</span><span class="p">,</span> <span class="n">post_save</span><span class="p">,</span> <span class="n">pre_save</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">receiver</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Article</span><span class="p">,</span> <span class="n">Newsletter</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------</span>
+<span class="c1"># 1. Create the groups and give them their permissions</span>
+<span class="c1"># ---------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="create_groups_and_permissions">
+<a class="viewcode-back" href="../../news.html#news.signals.create_groups_and_permissions">[docs]</a>
+<span class="nd">@receiver</span><span class="p">(</span><span class="n">post_migrate</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_groups_and_permissions</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create the three groups after the database tables are made.</span>
+
+<span class="sd">    I use post_migrate because the permissions only exist in the</span>
+<span class="sd">    database after the migrations have run.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># only run this for my own app, not for every app in the project</span>
+    <span class="k">if</span> <span class="n">sender</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;news&#39;</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="c1"># get the content types so I can find the correct permissions</span>
+    <span class="n">article_type</span> <span class="o">=</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get_for_model</span><span class="p">(</span><span class="n">Article</span><span class="p">)</span>
+    <span class="n">newsletter_type</span> <span class="o">=</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get_for_model</span><span class="p">(</span><span class="n">Newsletter</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_permission</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">content_type</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Small helper to fetch one permission like &#39;add_article&#39;.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Permission</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">codename</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="n">content_type</span><span class="o">=</span><span class="n">content_type</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># This dictionary says which actions each group is allowed to do.</span>
+    <span class="c1"># It comes straight from the instructions in the task.</span>
+    <span class="n">permissions_for_group</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;Reader&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;view&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;Editor&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;view&#39;</span><span class="p">,</span> <span class="s1">&#39;change&#39;</span><span class="p">,</span> <span class="s1">&#39;delete&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;Journalist&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">,</span> <span class="s1">&#39;view&#39;</span><span class="p">,</span> <span class="s1">&#39;change&#39;</span><span class="p">,</span> <span class="s1">&#39;delete&#39;</span><span class="p">],</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="n">group_name</span><span class="p">,</span> <span class="n">actions</span> <span class="ow">in</span> <span class="n">permissions_for_group</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">group</span><span class="p">,</span> <span class="n">created</span> <span class="o">=</span> <span class="n">Group</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get_or_create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">group_name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">actions</span><span class="p">:</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">permissions</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+                <span class="n">get_permission</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="s1">&#39;article&#39;</span><span class="p">,</span> <span class="n">article_type</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">permissions</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+                <span class="n">get_permission</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="s1">&#39;newsletter&#39;</span><span class="p">,</span> <span class="n">newsletter_type</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">save</span><span class="p">()</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------</span>
+<span class="c1"># 2. What happens when an article gets approved</span>
+<span class="c1"># ---------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="remember_old_approved_value">
+<a class="viewcode-back" href="../../news.html#news.signals.remember_old_approved_value">[docs]</a>
+<span class="nd">@receiver</span><span class="p">(</span><span class="n">pre_save</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="n">Article</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">remember_old_approved_value</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remember if the article was already approved before we saved it.</span>
+
+<span class="sd">    I need this because post_save can not tell me what the value used to</span>
+<span class="sd">    be. Without this check the email would be sent every single time</span>
+<span class="sd">    somebody saves an already approved article.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">instance</span><span class="o">.</span><span class="n">pk</span><span class="p">:</span>
+        <span class="c1"># the article already exists, so get the old version from the db</span>
+        <span class="n">old_article</span> <span class="o">=</span> <span class="n">Article</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">pk</span><span class="o">=</span><span class="n">instance</span><span class="o">.</span><span class="n">pk</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">was_approved_before</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">old_article</span><span class="o">.</span><span class="n">approved</span> <span class="k">if</span> <span class="n">old_article</span> <span class="k">else</span> <span class="kc">False</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># brand new article, so it was definitely not approved before</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">was_approved_before</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+
+<div class="viewcode-block" id="article_approved">
+<a class="viewcode-back" href="../../news.html#news.signals.article_approved">[docs]</a>
+<span class="nd">@receiver</span><span class="p">(</span><span class="n">post_save</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="n">Article</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">article_approved</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">created</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run after an article is saved.</span>
+
+<span class="sd">    If the article has just been changed from not approved to approved</span>
+<span class="sd">    then I send the emails and the POST request.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">was_approved_before</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s1">&#39;was_approved_before&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># only carry on if the article changed from False to True</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">instance</span><span class="o">.</span><span class="n">approved</span> <span class="ow">or</span> <span class="n">was_approved_before</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="n">send_article_to_subscribers</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span>
+    <span class="n">post_article_to_api</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_subscriber_emails">
+<a class="viewcode-back" href="../../news.html#news.signals.get_subscriber_emails">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_subscriber_emails</span><span class="p">(</span><span class="n">article</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a list of the email addresses that must get the article.</span>
+
+<span class="sd">    Everybody who subscribed to the journalist gets the email, and if</span>
+<span class="sd">    the article belongs to a publisher then the people who subscribed to</span>
+<span class="sd">    that publisher get it as well.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">emails</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># people who subscribed to the journalist that wrote the article</span>
+    <span class="k">for</span> <span class="n">reader</span> <span class="ow">in</span> <span class="n">article</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">followers</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">reader</span><span class="o">.</span><span class="n">email</span><span class="p">:</span>
+            <span class="n">emails</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">email</span><span class="p">)</span>
+
+    <span class="c1"># people who subscribed to the publisher of the article</span>
+    <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">publisher</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">reader</span> <span class="ow">in</span> <span class="n">article</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="n">subscribers</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">reader</span><span class="o">.</span><span class="n">email</span><span class="p">:</span>
+                <span class="n">emails</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">email</span><span class="p">)</span>
+
+    <span class="c1"># remove any duplicates (a reader could follow both)</span>
+    <span class="n">unique_emails</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">emails</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">unique_emails</span></div>
+
+
+
+<div class="viewcode-block" id="send_article_to_subscribers">
+<a class="viewcode-back" href="../../news.html#news.signals.send_article_to_subscribers">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">send_article_to_subscribers</span><span class="p">(</span><span class="n">article</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Send the approved article by email to all the subscribers.&quot;&quot;&quot;</span>
+    <span class="n">emails</span> <span class="o">=</span> <span class="n">get_subscriber_emails</span><span class="p">(</span><span class="n">article</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">emails</span><span class="p">:</span>
+        <span class="c1"># nobody is subscribed so there is nothing to do</span>
+        <span class="k">return</span>
+
+    <span class="n">subject</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;New article: </span><span class="si">{</span><span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">publisher_name</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">article</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">publisher</span> <span class="k">else</span> <span class="s1">&#39;Independent&#39;</span>
+    <span class="p">)</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s1">&#39;Hello</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+        <span class="sa">f</span><span class="s1">&#39;A new article has been published on our news site.</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+        <span class="sa">f</span><span class="s1">&#39;Title: </span><span class="si">{</span><span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="sa">f</span><span class="s1">&#39;Author: </span><span class="si">{</span><span class="n">article</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">username</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="sa">f</span><span class="s1">&#39;Publisher: </span><span class="si">{</span><span class="n">publisher_name</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">article</span><span class="o">.</span><span class="n">content</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+        <span class="sa">f</span><span class="s1">&#39;Thank you for subscribing.&#39;</span>
+    <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">send_mail</span><span class="p">(</span>
+            <span class="n">subject</span><span class="o">=</span><span class="n">subject</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span>
+            <span class="n">from_email</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">DEFAULT_FROM_EMAIL</span><span class="p">,</span>
+            <span class="n">recipient_list</span><span class="o">=</span><span class="n">emails</span><span class="p">,</span>
+            <span class="n">fail_silently</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="c1"># I do not want the website to crash if the email server is down</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Could not send the email: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="post_article_to_api">
+<a class="viewcode-back" href="../../news.html#news.signals.post_article_to_api">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_article_to_api</span><span class="p">(</span><span class="n">article</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Send the approved article to my own API with a POST request.</span>
+
+<span class="sd">    The task said to use the requests module to POST the article to my</span>
+<span class="sd">    own endpoint (/api/approved/). That endpoint then saves it in the</span>
+<span class="sd">    ApprovedArticleLog table.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">SITE_URL</span><span class="si">}</span><span class="s1">/api/approved/&#39;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;article&#39;</span><span class="p">:</span> <span class="n">article</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+        <span class="s1">&#39;author_username&#39;</span><span class="p">:</span> <span class="n">article</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
+        <span class="s1">&#39;publisher_name&#39;</span><span class="p">:</span> <span class="p">(</span>
+            <span class="n">article</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">publisher</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="p">),</span>
+    <span class="p">}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Posted article to the API. Status: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">RequestException</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="c1"># this happens if the server is not running, so I just print it</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Could not post the article to the API: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Michael Musonda.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
