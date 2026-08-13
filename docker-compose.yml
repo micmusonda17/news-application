@@ -33,6 +33,10 @@ services:
       # A named volume keeps the data on the host, so the articles and
       # users are still there after "docker compose down".
       - mariadb_data:/var/lib/mysql
+      # Scripts in here are run once, when the database is first created.
+      # This one grants the application user the rights it needs to build
+      # Django's throwaway test database.
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       # MariaDB accepts connections a while after the container starts.
       # This check tells Compose when the database is genuinely ready,

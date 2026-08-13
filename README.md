@@ -118,7 +118,7 @@ articles and users survive a normal `docker compose down`.
 | `db` | `mariadb:11.4` | The MariaDB database the task asks for |
 | `web` | built from the `Dockerfile` | Django served by Gunicorn on port 8000 |
 
-Two things in that file are worth pointing out:
+Three things in that file are worth pointing out:
 
 * `DB_HOST` is set to **`db`**, not `localhost`. Compose puts both
   containers on the same private network and lets them find each other
@@ -129,6 +129,12 @@ Two things in that file are worth pointing out:
   to accept connections after its container starts. Without the
   healthcheck, `migrate` would run too early and fail with a connection
   error.
+* The folder `docker/initdb/` is mounted into the database container.
+  MariaDB runs anything in there **once**, when the data directory is
+  first created. The script it contains grants `news_user` the rights to
+  create Django's throwaway `test_*` database, which `manage.py test`
+  needs. Because it only runs on first initialisation, you have to
+  `docker compose down -v` before a change to it takes effect.
 
 ### 1b. With the Dockerfile on its own
 
@@ -354,6 +360,7 @@ must be replaced before the site is used for real.
 | `news/static/news/style.css` | The CSS |
 | `Dockerfile` | Builds the image that runs the app under Gunicorn |
 | `docker-compose.yml` | Runs the app together with a MariaDB container |
+| `docker/initdb/` | SQL/shell run once when the database container is first created |
 | `.env.example` | Template for the environment variables |
 | `requirements.txt` | The python packages the project needs |
 
@@ -405,6 +412,20 @@ Or inside Docker:
 
 ```bash
 docker compose exec web python manage.py test
+```
+
+Django does not run the tests against the real database. It creates a
+separate one called `test_news_application`, runs everything inside it,
+and drops it afterwards, so your articles and users are never touched.
+Creating that database needs an extra privilege, which the script in
+`docker/initdb/` grants when the database container is first built.
+
+If you would rather run the tests against SQLite - which is quicker and
+needs no database container at all - override the setting for that one
+command:
+
+```bash
+docker compose exec -e USE_SQLITE=True web python manage.py test
 ```
 
 There are 48 tests and they check:
