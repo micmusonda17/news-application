@@ -1,6 +1,12 @@
 # Keep these out of the image to make the build faster and smaller
 venv/
 env/
+
+# Secrets are passed in at run time, never baked into the image.
+.env
+
+# Compose orchestrates the image from outside, it is not needed inside.
+docker-compose.yml
 __pycache__/
 *.pyc
 db.sqlite3

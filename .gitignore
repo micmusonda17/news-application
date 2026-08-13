@@ -4,7 +4,13 @@ __pycache__/
 db.sqlite3
 venv/
 env/
+
+# The real environment file holds passwords and the secret key, so it
+# must never be committed. The example file has no real values in it and
+# is committed on purpose so others know which variables to set.
 .env
+!.env.example
+
 staticfiles/
 .DS_Store
 .vscode/

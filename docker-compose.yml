@@ -1,0 +1,76 @@
+# Docker Compose setup for the News Application.
+#
+# This runs the whole project with one command. It starts two
+# containers:
+#
+#   db  - MariaDB, which the task asks for as the database
+#   web - the Django application itself, served by Gunicorn
+#
+# Compose puts both containers on the same private network, so the web
+# container reaches the database at the hostname "db" rather than at
+# 127.0.0.1. That is why DB_HOST below is "db" and not "localhost".
+#
+# No passwords are written into this file. Every value is read from the
+# environment, with a development default after ":-" so the project also
+# starts on a machine that has no .env file. Copy .env.example to .env
+# and put your own values there before running anything real.
+#
+# Start everything with:   docker compose up --build
+# Stop everything with:    docker compose down
+
+services:
+
+  db:
+    image: mariadb:11.4
+    container_name: news_db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_NAME:-news_application}
+      MARIADB_USER: ${DB_USER:-news_user}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-news_password}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
+    volumes:
+      # A named volume keeps the data on the host, so the articles and
+      # users are still there after "docker compose down".
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      # MariaDB accepts connections a while after the container starts.
+      # This check tells Compose when the database is genuinely ready,
+      # so the web container does not try to migrate against a database
+      # that is still starting up.
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  web:
+    build: .
+    container_name: news_web
+    restart: unless-stopped
+    depends_on:
+      db:
+        # Wait for the healthcheck above to pass, not just for the
+        # container to exist. Without this the first migrate would fail.
+        condition: service_healthy
+    environment:
+      # Tell Django to use MariaDB instead of the SQLite fallback.
+      USE_SQLITE: "False"
+      DB_NAME: ${DB_NAME:-news_application}
+      DB_USER: ${DB_USER:-news_user}
+      DB_PASSWORD: ${DB_PASSWORD:-news_password}
+      # "db" is the service name above. Compose resolves it to the
+      # database container's address on the private network.
+      DB_HOST: db
+      DB_PORT: "3306"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-django-insecure-change-me-for-anything-real}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-*}
+      # Emails print to the terminal unless real SMTP details are given.
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+    ports:
+      # host port : container port
+      - "8000:8000"
+
+volumes:
+  mariadb_data:
